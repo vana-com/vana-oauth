@@ -1,0 +1,5 @@
+FROM oryd/hydra:v2.1.2
+
+COPY hydra.yml /etc/config/hydra/hydra.yml
+# CMD ["migrate", "sql", "-e", "--yes", "&&", "serve", "public", "-c", "/etc/config/hydra/hydra.yml"]
+CMD ["serve", "public", "-c", "/etc/config/hydra/hydra.yml"]

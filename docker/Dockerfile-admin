@@ -1,0 +1,4 @@
+FROM oryd/hydra:v2.1.2
+
+COPY hydra.yml /etc/config/hydra/hydra.yml
+CMD ["serve", "admin", "-c", "/etc/config/hydra/hydra.yml"]
