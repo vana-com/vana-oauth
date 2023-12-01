@@ -31,8 +31,20 @@ docker push ${image_name}
 
 echo "Deploy to Cloud Run"
 gcloud container images describe ${image_name}
-gcloud run deploy ${service_name} \
-    --image ${image_name} \
-    --region us-central1 \
-    --vpc-connector vpc-conn-${env} \
-    --allow-unauthenticated
+
+if [ ${hydra_service} -eq "admin" ]
+then
+  # Hydra admin service needs to be authenticated
+  gcloud run deploy ${service_name} \
+      --image ${image_name} \
+      --region us-central1 \
+      --vpc-connector vpc-conn-${env} \
+      --no-allow-unauthenticated \
+      --service-account vana-app-user@corsali-${env}.iam.gserviceaccount.com
+else
+  gcloud run deploy ${service_name} \
+      --image ${image_name} \
+      --region us-central1 \
+      --vpc-connector vpc-conn-${env} \
+      --allow-unauthenticated
+fi
