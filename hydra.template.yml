@@ -93,3 +93,7 @@ oidc:
 
 oauth2:
   expose_internal_errors: $OAUTH2_EXPOSE_INTERNAL_ERRORS
+
+ttl:
+  access_token: 168h
+  id_token: 168h
