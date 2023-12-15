@@ -1,6 +1,8 @@
 # Vana OAuth
 Vana's OAuth services, using [Ory Hydra](https://github.com/ory/hydra).
 
+Login Playground: https://vana-com.github.io/vana-oauth/
+
 Ory Hydra provides [two services](https://www.ory.sh/docs/hydra/self-hosted/production#exposing-administrative-and-public-api-endpoints) to allow Vana to act as an OAuth server.
 
 Public endpoints: deployed to `https://development-oauth.vana.com`
