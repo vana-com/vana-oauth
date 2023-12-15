@@ -106,7 +106,6 @@
           function (request, body) {
             // Initialize your application now that you have an access token.
             // Here we just display it in the browser.
-            console.log("body 2", body);
             document.getElementById("access_token").innerText =
               body.access_token;
             document.getElementById("start").classList = "hidden";
@@ -143,7 +142,7 @@
         "application/x-www-form-urlencoded; charset=UTF-8"
       );
       request.onload = function () {
-        const body = {};
+        let body = {};
         try {
           body = JSON.parse(request.response);
         } catch (e) {
@@ -151,7 +150,6 @@
         }
 
         if (request.status == 200) {
-          console.log("body", body);
           success(request, body);
         } else {
           error(request, body);
