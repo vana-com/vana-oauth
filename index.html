@@ -146,7 +146,9 @@
         const body = {};
         try {
           body = JSON.parse(request.response);
-        } catch (e) {}
+        } catch (e) {
+          console.error("Error parsing response body", e, request);
+        }
 
         if (request.status == 200) {
           console.log("body", body);
