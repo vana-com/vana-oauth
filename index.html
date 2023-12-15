@@ -106,6 +106,7 @@
           function (request, body) {
             // Initialize your application now that you have an access token.
             // Here we just display it in the browser.
+            console.log("body 2", body);
             document.getElementById("access_token").innerText =
               body.access_token;
             document.getElementById("start").classList = "hidden";
@@ -115,6 +116,7 @@
             window.history.replaceState({}, null, "/");
           },
           function (request, error) {
+            console.log("error", error);
             // This could be an error response from the OAuth server, or an error because the
             // request failed such as if the OAuth server doesn't allow CORS requests
             document.getElementById("error_details").innerText =
@@ -147,6 +149,7 @@
         } catch (e) {}
 
         if (request.status == 200) {
+          console.log("body", body);
           success(request, body);
         } else {
           error(request, body);
