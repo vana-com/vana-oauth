@@ -1,0 +1,49 @@
+# This workflow will build and deploy to Google Cloud Run
+
+name: Build, Push, Deploy
+
+on:
+  push:
+    branches:
+      - development
+      - staging
+      - production
+
+jobs:
+  deploy:
+    name: Deploy to Google Cloud Run
+    runs-on: ubuntu-latest
+    env:
+      ENVIRONMENT: ${{ github.ref_name }}
+      DOPPLER_TOKEN: ${{ secrets.DOPPLER_SERVICE_TOKEN }}
+    environment: ${{ github.ref_name }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      # Setup Doppler
+      - name: Install Doppler CLI
+        uses: dopplerhq/cli-action@v1
+
+      # Setup and authorize gcloud + kubectl
+      - name: "Authenticate with GCP"
+        uses: "google-github-actions/auth@v1"
+        with:
+          credentials_json: "${{ secrets.GCP_SERVICE_ACCOUNT }}"
+
+      - name: "Set up Cloud SDK"
+        uses: "google-github-actions/setup-gcloud@v0"
+
+      - name: Authorize Docker push
+        run: gcloud auth configure-docker us-docker.pkg.dev
+
+      - name: Install gke-gcloud-auth-plugin
+        run: gcloud components install gke-gcloud-auth-plugin
+
+      # Build and deploy
+      - name: Build and deploy Admin endpoint
+        run: bash scripts/deploy-hydra.sh admin ${{ env.ENVIRONMENT }}
+
+      - name: Build and deploy Public endpoint
+        run: bash scripts/deploy-hydra.sh public ${{ env.ENVIRONMENT }}
