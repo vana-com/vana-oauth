@@ -4,7 +4,7 @@ set -euo pipefail
 IFS=$'\n\t'
 
 usage() {
-  echo "Usage: ./scripts/migrate-hydra.sh <development|staging|production>" >&2
+  echo "Usage: ./scripts/migrate-hydra.sh <development|production>" >&2
   exit 1
 }
 
@@ -14,7 +14,7 @@ fi
 
 env=$1
 case "$env" in
-  development|staging|production) ;;
+  development|production) ;;
   *) usage ;;
 esac
 

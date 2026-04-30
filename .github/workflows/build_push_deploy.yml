@@ -6,7 +6,6 @@ on:
   push:
     branches:
       - development
-      - staging
       - production
 
 jobs:
@@ -38,6 +37,9 @@ jobs:
 
       - name: Authorize Docker push
         run: gcloud auth configure-docker gcr.io
+
+      - name: Run Hydra SQL migrations
+        run: bash scripts/migrate-hydra.sh ${{ env.ENVIRONMENT }}
 
       # Build and deploy
       - name: Build and deploy Admin endpoint

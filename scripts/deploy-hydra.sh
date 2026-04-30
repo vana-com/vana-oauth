@@ -4,7 +4,7 @@ set -euo pipefail
 IFS=$'\n\t'
 
 usage() {
-  echo "Usage: ./scripts/deploy-hydra.sh <admin|public> <development|staging|production>" >&2
+  echo "Usage: ./scripts/deploy-hydra.sh <admin|public> <development|production>" >&2
   exit 1
 }
 
@@ -22,7 +22,7 @@ case "$hydra_service" in
 esac
 
 case "$env" in
-  development|staging|production) ;;
+  development|production) ;;
   *) usage ;;
 esac
 
@@ -37,10 +37,10 @@ cloud_project="corsali-${env}"
 service_account="vana-app-user@${cloud_project}.iam.gserviceaccount.com"
 
 env_file="$(mktemp)"
-hydra_config="$repo_root/hydra.yml"
+secret_value_file="$(mktemp)"
 
 cleanup() {
-  rm -f "$env_file" "$hydra_config"
+  rm -f "$env_file" "$secret_value_file"
 }
 
 trap cleanup EXIT
@@ -65,11 +65,33 @@ done
 : "${LOG_LEAK_SENSITIVE_VALUES:=false}"
 : "${OAUTH2_EXPOSE_INTERNAL_ERRORS:=false}"
 
-echo "Rendering hydra.yml"
-envsubst < hydra.template.yml > "$hydra_config"
-
 echo "Configuring gcloud"
 gcloud config set project "$cloud_project"
+
+secret_env_vars=(
+  DATABASE_URL
+  SYSTEM_SECRET
+  COOKIE_SECRET
+  PAGINATION_SECRET
+  OIDC_PAIRWISE_SALT
+)
+
+secret_specs=()
+for key in "${secret_env_vars[@]}"; do
+  secret_name="ory-hydra-${env}-$(echo "$key" | tr '[:upper:]_' '[:lower:]-')"
+  if ! gcloud secrets describe "$secret_name" >/dev/null 2>&1; then
+    gcloud secrets create "$secret_name" --replication-policy=automatic >/dev/null
+  fi
+  printf "%s" "${!key}" > "$secret_value_file"
+  gcloud secrets versions add "$secret_name" --data-file="$secret_value_file" >/dev/null
+  gcloud secrets add-iam-policy-binding "$secret_name" \
+    --member "serviceAccount:${service_account}" \
+    --role roles/secretmanager.secretAccessor >/dev/null
+  secret_specs+=("${key}=${secret_name}:latest")
+done
+
+secret_specs_csv="$(IFS=,; echo "${secret_specs[*]}")"
+env_vars_csv="LOGIN_URL=${LOGIN_URL},ORY_PUBLIC_URL=${ORY_PUBLIC_URL},ORY_ADMIN_URL=${ORY_ADMIN_URL},COOKIE_DOMAIN=${COOKIE_DOMAIN},CORS_DEBUG=${CORS_DEBUG},LOG_LEAK_SENSITIVE_VALUES=${LOG_LEAK_SENSITIVE_VALUES},OAUTH2_EXPOSE_INTERNAL_ERRORS=${OAUTH2_EXPOSE_INTERNAL_ERRORS}"
 
 echo "Build and push docker image"
 docker build --no-cache --platform linux/amd64 --build-arg "HYDRA_VERSION=${HYDRA_VERSION}" -t "$image_name" -f "docker/$dockerfile" .
@@ -83,14 +105,16 @@ deploy_args=(
   gcloud run deploy "$service_name"
   --image "$image_name"
   --region us-central1
+  --set-env-vars "$env_vars_csv"
+  --update-secrets "$secret_specs_csv"
   --vpc-connector "vpc-conn-${env}"
+  --service-account "$service_account"
 )
 
 if [[ "$hydra_service" == "admin" ]]; then
   # Hydra admin must stay behind service-to-service auth.
   deploy_args+=(
     --no-allow-unauthenticated
-    --service-account "$service_account"
   )
 else
   deploy_args+=(--allow-unauthenticated)
