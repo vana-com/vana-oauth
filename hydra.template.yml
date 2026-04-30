@@ -59,7 +59,7 @@ serve:
   cookies:
     same_site_mode: None
     same_site_legacy_workaround: true
-    domain: .vana.com
+    domain: $COOKIE_DOMAIN
     secure: true
     paths:
       session: "/"
@@ -82,6 +82,10 @@ dsn: $DATABASE_URL
 secrets:
   system:
     - $SYSTEM_SECRET
+  cookie:
+    - $COOKIE_SECRET
+  pagination:
+    - $PAGINATION_SECRET
 
 oidc:
   subject_identifiers:
