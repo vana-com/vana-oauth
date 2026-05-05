@@ -1,3 +1,32 @@
+#!/usr/bin/env sh
+set -eu
+
+required_vars="
+DATABASE_URL
+LOGIN_URL
+DEVICE_URL
+ORY_PUBLIC_URL
+ORY_ADMIN_URL
+COOKIE_DOMAIN
+SYSTEM_SECRET
+COOKIE_SECRET
+PAGINATION_SECRET
+OIDC_PAIRWISE_SALT
+"
+
+for var in $required_vars; do
+  eval "value=\${$var:-}"
+  if [ -z "$value" ]; then
+    echo "$var is not set" >&2
+    exit 1
+  fi
+done
+
+: "${CORS_DEBUG:=false}"
+: "${LOG_LEAK_SENSITIVE_VALUES:=false}"
+: "${OAUTH2_EXPOSE_INTERNAL_ERRORS:=false}"
+
+cat > /tmp/hydra.yml <<EOF
 serve:
 
   admin:
@@ -5,7 +34,7 @@ serve:
     cors:
       enabled: true
       allowed_origins:
-        - $LOGIN_URL
+        - "$LOGIN_URL"
       allowed_methods:
         - POST
         - GET
@@ -33,7 +62,7 @@ serve:
     cors:
       enabled: true
       allowed_origins:
-        - $LOGIN_URL
+        - "$LOGIN_URL"
       allowed_methods:
         - POST
         - GET
@@ -59,7 +88,7 @@ serve:
   cookies:
     same_site_mode: None
     same_site_legacy_workaround: true
-    domain: $COOKIE_DOMAIN
+    domain: "$COOKIE_DOMAIN"
     secure: true
     paths:
       session: "/"
@@ -69,26 +98,26 @@ log:
 
 urls:
   self:
-    public: $ORY_PUBLIC_URL
-    admin: $ORY_ADMIN_URL
-    issuer: $ORY_PUBLIC_URL
-  consent: $LOGIN_URL/consent
-  login: $LOGIN_URL/login
-  logout: $LOGIN_URL/logout
-  error: $LOGIN_URL/error
+    public: "$ORY_PUBLIC_URL"
+    admin: "$ORY_ADMIN_URL"
+    issuer: "$ORY_PUBLIC_URL"
+  consent: "$LOGIN_URL/consent"
+  login: "$LOGIN_URL/login"
+  logout: "$LOGIN_URL/logout"
+  error: "$LOGIN_URL/error"
   device:
-    verification: $DEVICE_URL/device
-    success: $DEVICE_URL/device-success
+    verification: "$DEVICE_URL/device"
+    success: "$DEVICE_URL/device-success"
 
-dsn: $DATABASE_URL
+dsn: "$DATABASE_URL"
 
 secrets:
   system:
-    - $SYSTEM_SECRET
+    - "$SYSTEM_SECRET"
   cookie:
-    - $COOKIE_SECRET
+    - "$COOKIE_SECRET"
   pagination:
-    - $PAGINATION_SECRET
+    - "$PAGINATION_SECRET"
 
 oidc:
   subject_identifiers:
@@ -96,7 +125,7 @@ oidc:
       - pairwise
       - public
     pairwise:
-      salt: $OIDC_PAIRWISE_SALT
+      salt: "$OIDC_PAIRWISE_SALT"
 
 oauth2:
   expose_internal_errors: $OAUTH2_EXPOSE_INTERNAL_ERRORS
@@ -104,3 +133,13 @@ oauth2:
 ttl:
   access_token: 168h
   id_token: 168h
+EOF
+
+case "${1:-}" in
+  serve|migrate)
+    exec hydra "$@" -c /tmp/hydra.yml
+    ;;
+  *)
+    exec hydra "$@"
+    ;;
+esac

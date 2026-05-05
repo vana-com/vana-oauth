@@ -6,7 +6,6 @@ on:
   push:
     branches:
       - development
-      - staging
       - production
 
 jobs:
@@ -16,11 +15,12 @@ jobs:
     env:
       ENVIRONMENT: ${{ github.ref_name }}
       DOPPLER_TOKEN: ${{ secrets.DOPPLER_SERVICE_TOKEN }}
+      HYDRA_VERSION: v26.2.0
     environment: ${{ github.ref_name }}
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       # Setup Doppler
       - name: Install Doppler CLI
@@ -28,18 +28,18 @@ jobs:
 
       # Setup and authorize gcloud + kubectl
       - name: "Authenticate with GCP"
-        uses: "google-github-actions/auth@v1"
+        uses: "google-github-actions/auth@v2"
         with:
           credentials_json: "${{ secrets.GCP_SERVICE_ACCOUNT }}"
 
       - name: "Set up Cloud SDK"
-        uses: "google-github-actions/setup-gcloud@v0"
+        uses: "google-github-actions/setup-gcloud@v2"
 
       - name: Authorize Docker push
-        run: gcloud auth configure-docker us-docker.pkg.dev
+        run: gcloud auth configure-docker gcr.io
 
-      - name: Install gke-gcloud-auth-plugin
-        run: gcloud components install gke-gcloud-auth-plugin
+      - name: Run Hydra SQL migrations
+        run: bash scripts/migrate-hydra.sh ${{ env.ENVIRONMENT }}
 
       # Build and deploy
       - name: Build and deploy Admin endpoint
