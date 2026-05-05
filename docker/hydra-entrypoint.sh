@@ -4,6 +4,7 @@ set -eu
 required_vars="
 DATABASE_URL
 LOGIN_URL
+DEVICE_URL
 ORY_PUBLIC_URL
 ORY_ADMIN_URL
 COOKIE_DOMAIN
@@ -104,6 +105,9 @@ urls:
   login: "$LOGIN_URL/login"
   logout: "$LOGIN_URL/logout"
   error: "$LOGIN_URL/error"
+  device:
+    verification: "$DEVICE_URL/device"
+    success: "$DEVICE_URL/device-success"
 
 dsn: "$DATABASE_URL"
 
