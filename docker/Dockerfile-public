@@ -1,5 +1,8 @@
-FROM oryd/hydra:v2.1.2
+ARG HYDRA_VERSION=v26.2.0
+FROM oryd/hydra:${HYDRA_VERSION}
 
-COPY hydra.yml /etc/config/hydra/hydra.yml
-# CMD ["migrate", "sql", "-e", "--yes", "&&", "serve", "public", "-c", "/etc/config/hydra/hydra.yml"]
-CMD ["serve", "public", "-c", "/etc/config/hydra/hydra.yml"]
+COPY hydra.template.yml /etc/config/hydra/hydra.template.yml
+COPY --chmod=755 docker/hydra-entrypoint.sh /usr/local/bin/hydra-entrypoint.sh
+
+ENTRYPOINT ["/usr/local/bin/hydra-entrypoint.sh"]
+CMD ["serve", "public"]
