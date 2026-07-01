@@ -42,7 +42,7 @@ set -a
 source "$env_file"
 set +a
 
-for required_var in DATABASE_URL LOGIN_URL ORY_PUBLIC_URL ORY_ADMIN_URL COOKIE_DOMAIN SYSTEM_SECRET COOKIE_SECRET PAGINATION_SECRET OIDC_PAIRWISE_SALT; do
+for required_var in DATABASE_URL LOGIN_URL DEVICE_URL ORY_PUBLIC_URL ORY_ADMIN_URL COOKIE_DOMAIN SYSTEM_SECRET COOKIE_SECRET PAGINATION_SECRET OIDC_PAIRWISE_SALT; do
   if [[ -z "${!required_var:-}" ]]; then
     echo "${required_var} is not set" >&2
     exit 1
