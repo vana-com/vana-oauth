@@ -82,10 +82,7 @@ secret_env_vars=(
   OIDC_PAIRWISE_SALT
 )
 
-sync_secret_manager="${SYNC_SECRET_MANAGER:-true}"
-if [[ "$env" == "production" ]]; then
-  sync_secret_manager="${SYNC_SECRET_MANAGER:-false}"
-fi
+sync_secret_manager="${SYNC_SECRET_MANAGER:-false}"
 secret_specs=()
 for key in "${secret_env_vars[@]}"; do
   secret_name="ory-hydra-${env}-$(echo "$key" | tr '[:upper:]_' '[:lower:]-')"
