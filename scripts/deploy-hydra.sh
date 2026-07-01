@@ -79,6 +79,10 @@ secret_env_vars=(
 secret_specs=()
 for key in "${secret_env_vars[@]}"; do
   secret_name="ory-hydra-${env}-$(echo "$key" | tr '[:upper:]_' '[:lower:]-')"
+  secret_version="latest"
+  if [[ "$env" == "production" && "$key" == "SYSTEM_SECRET" ]]; then
+    secret_version="${HYDRA_PRODUCTION_SYSTEM_SECRET_VERSION:-1}"
+  fi
   if ! gcloud secrets describe "$secret_name" >/dev/null 2>&1; then
     gcloud secrets create "$secret_name" --replication-policy=automatic >/dev/null
   fi
@@ -87,7 +91,7 @@ for key in "${secret_env_vars[@]}"; do
   gcloud secrets add-iam-policy-binding "$secret_name" \
     --member "serviceAccount:${service_account}" \
     --role roles/secretmanager.secretAccessor >/dev/null
-  secret_specs+=("${key}=${secret_name}:latest")
+  secret_specs+=("${key}=${secret_name}:${secret_version}")
 done
 
 secret_specs_csv="$(IFS=,; echo "${secret_specs[*]}")"
