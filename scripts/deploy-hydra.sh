@@ -36,7 +36,10 @@ if [[ "$env" == "production" ]]; then
 fi
 dockerfile="Dockerfile-${hydra_service}"
 cloud_project="corsali-${env}"
-image_name="us-docker.pkg.dev/${cloud_project}/docker/ory-hydra-${hydra_service}:${HYDRA_VERSION}"
+image_name="gcr.io/${cloud_project}/ory-hydra-${hydra_service}:${HYDRA_VERSION}"
+if [[ "$env" == "production" ]]; then
+  image_name="us-docker.pkg.dev/${cloud_project}/docker/ory-hydra-${hydra_service}:${HYDRA_VERSION}"
+fi
 service_account="vana-app-user@${cloud_project}.iam.gserviceaccount.com"
 
 env_file="$(mktemp)"
@@ -79,7 +82,10 @@ secret_env_vars=(
   OIDC_PAIRWISE_SALT
 )
 
-sync_secret_manager="${SYNC_SECRET_MANAGER:-false}"
+sync_secret_manager="${SYNC_SECRET_MANAGER:-true}"
+if [[ "$env" == "production" ]]; then
+  sync_secret_manager="${SYNC_SECRET_MANAGER:-false}"
+fi
 secret_specs=()
 for key in "${secret_env_vars[@]}"; do
   secret_name="ory-hydra-${env}-$(echo "$key" | tr '[:upper:]_' '[:lower:]-')"
