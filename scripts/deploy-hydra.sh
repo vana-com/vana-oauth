@@ -31,6 +31,9 @@ repo_root="$(cd "${script_dir}/.." && pwd)"
 cd "$repo_root"
 
 service_name="ory-hydra-${hydra_service}-${env}"
+if [[ "$env" == "production" ]]; then
+  service_name="${service_name}-v2"
+fi
 dockerfile="Dockerfile-${hydra_service}"
 cloud_project="corsali-${env}"
 image_name="us-docker.pkg.dev/${cloud_project}/docker/ory-hydra-${hydra_service}:${HYDRA_VERSION}"
