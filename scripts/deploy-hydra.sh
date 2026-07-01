@@ -31,9 +31,12 @@ repo_root="$(cd "${script_dir}/.." && pwd)"
 cd "$repo_root"
 
 service_name="ory-hydra-${hydra_service}-${env}"
+if [[ "$env" == "production" ]]; then
+  service_name="${service_name}-v2"
+fi
 dockerfile="Dockerfile-${hydra_service}"
-image_name="gcr.io/corsali-${env}/ory-hydra-${hydra_service}:${HYDRA_VERSION}"
 cloud_project="corsali-${env}"
+image_name="us-docker.pkg.dev/${cloud_project}/docker/ory-hydra-${hydra_service}:${HYDRA_VERSION}"
 service_account="vana-app-user@${cloud_project}.iam.gserviceaccount.com"
 
 env_file="$(mktemp)"
@@ -76,6 +79,7 @@ secret_env_vars=(
   OIDC_PAIRWISE_SALT
 )
 
+sync_secret_manager="${SYNC_SECRET_MANAGER:-false}"
 secret_specs=()
 for key in "${secret_env_vars[@]}"; do
   secret_name="ory-hydra-${env}-$(echo "$key" | tr '[:upper:]_' '[:lower:]-')"
@@ -83,14 +87,16 @@ for key in "${secret_env_vars[@]}"; do
   if [[ "$env" == "production" && "$key" == "SYSTEM_SECRET" ]]; then
     secret_version="${HYDRA_PRODUCTION_SYSTEM_SECRET_VERSION:-1}"
   fi
-  if ! gcloud secrets describe "$secret_name" >/dev/null 2>&1; then
-    gcloud secrets create "$secret_name" --replication-policy=automatic >/dev/null
+  if [[ "$sync_secret_manager" == "true" ]]; then
+    if ! gcloud secrets describe "$secret_name" >/dev/null 2>&1; then
+      gcloud secrets create "$secret_name" --replication-policy=automatic >/dev/null
+    fi
+    printf "%s" "${!key}" > "$secret_value_file"
+    gcloud secrets versions add "$secret_name" --data-file="$secret_value_file" >/dev/null
+    gcloud secrets add-iam-policy-binding "$secret_name" \
+      --member "serviceAccount:${service_account}" \
+      --role roles/secretmanager.secretAccessor >/dev/null
   fi
-  printf "%s" "${!key}" > "$secret_value_file"
-  gcloud secrets versions add "$secret_name" --data-file="$secret_value_file" >/dev/null
-  gcloud secrets add-iam-policy-binding "$secret_name" \
-    --member "serviceAccount:${service_account}" \
-    --role roles/secretmanager.secretAccessor >/dev/null
   secret_specs+=("${key}=${secret_name}:${secret_version}")
 done
 
