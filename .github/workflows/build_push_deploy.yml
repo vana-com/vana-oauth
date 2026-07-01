@@ -36,7 +36,9 @@ jobs:
         uses: "google-github-actions/setup-gcloud@v2"
 
       - name: Authorize Docker push
-        run: gcloud auth configure-docker gcr.io
+        run: |
+          gcloud auth configure-docker gcr.io --quiet
+          gcloud auth configure-docker us-docker.pkg.dev --quiet
 
       - name: Run Hydra SQL migrations
         run: bash scripts/migrate-hydra.sh ${{ env.ENVIRONMENT }}
