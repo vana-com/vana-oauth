@@ -76,17 +76,20 @@ secret_env_vars=(
   OIDC_PAIRWISE_SALT
 )
 
+sync_secret_manager="${SYNC_SECRET_MANAGER:-false}"
 secret_specs=()
 for key in "${secret_env_vars[@]}"; do
   secret_name="ory-hydra-${env}-$(echo "$key" | tr '[:upper:]_' '[:lower:]-')"
-  if ! gcloud secrets describe "$secret_name" >/dev/null 2>&1; then
-    gcloud secrets create "$secret_name" --replication-policy=automatic >/dev/null
+  if [[ "$sync_secret_manager" == "true" ]]; then
+    if ! gcloud secrets describe "$secret_name" >/dev/null 2>&1; then
+      gcloud secrets create "$secret_name" --replication-policy=automatic >/dev/null
+    fi
+    printf "%s" "${!key}" > "$secret_value_file"
+    gcloud secrets versions add "$secret_name" --data-file="$secret_value_file" >/dev/null
+    gcloud secrets add-iam-policy-binding "$secret_name" \
+      --member "serviceAccount:${service_account}" \
+      --role roles/secretmanager.secretAccessor >/dev/null
   fi
-  printf "%s" "${!key}" > "$secret_value_file"
-  gcloud secrets versions add "$secret_name" --data-file="$secret_value_file" >/dev/null
-  gcloud secrets add-iam-policy-binding "$secret_name" \
-    --member "serviceAccount:${service_account}" \
-    --role roles/secretmanager.secretAccessor >/dev/null
   secret_specs+=("${key}=${secret_name}:latest")
 done
 
